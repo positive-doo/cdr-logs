@@ -11,6 +11,27 @@ HEADERS = {
     "X-API-KEY": os.getenv("TRMM_NP"),
 }
 
+USERNAME = os.getenv("TRMM_USER")
+PASSWORD = os.getenv("TRMM_PASS")
+
+if 'login' not in st.session_state:
+    st.session_state.login = False
+
+def check_login(username, password):
+    return username == USERNAME and password == PASSWORD
+
+def login():
+    st.title("Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if check_login(username, password):
+            st.session_state.login = True
+            st.rerun()
+        else:
+            st.error("Invalid username or password")
+
+
 def fetch_clients():
     """Fetch the list of clients."""
     response = requests.get(f'{API_BASE_URL}/clients/', headers=HEADERS)
@@ -100,4 +121,7 @@ def main():
                 st.warning("Samo intedžeri!")
 
 if __name__ == "__main__":
-    main()
+    if not st.session_state.login:
+        login()
+    else:
+        main()
