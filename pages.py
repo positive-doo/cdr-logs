@@ -11,8 +11,10 @@ HEADERS = {
     "X-API-KEY": os.getenv("TRMM_NP"),
 }
 
-USERNAME = os.getenv("TRMM_USER")
-PASSWORD = os.getenv("TRMM_PASS")
+
+
+
+
 
 @st.cache_data
 def fetch_clients():
@@ -54,10 +56,7 @@ def page1():
     col1, _, col2 = st.columns([3, 1, 5])
 
     with col1:
-        if st.button("Fetch Clients"):
-            clients = fetch_clients()
-            if clients:
-                st.session_state.clients = pd.DataFrame(clients)
+        st.session_state.clients = pd.DataFrame(fetch_clients())
 
         if st.session_state.clients is not None:
             df = st.session_state.clients
@@ -79,27 +78,31 @@ def page1():
 
         if client_id:
             if client_id.isdigit():
-                workstations = fetch_workstations(int(client_id))
+                client_id_int = int(client_id)
+                if client_id_int in st.session_state.clients['id'].values:
+                    workstations = fetch_workstations(int(client_id))
 
-                if workstations != []:
-                    if workstations:
-                        st.session_state.workstations = pd.DataFrame(workstations)
+                    if workstations != []:
+                        if workstations:
+                            st.session_state.workstations = pd.DataFrame(workstations)
 
-                    if st.session_state.workstations is not None:
-                        df = st.session_state.workstations
-                        display_df = df[['hostname', 'logged_username']]
-                        st.write("### Workstation Data")
-                        st.dataframe(display_df, use_container_width=True)
-                        csv = df.to_csv(index=False).encode('utf-8-sig')
+                        if st.session_state.workstations is not None:
+                            df = st.session_state.workstations
+                            display_df = df[['hostname', 'logged_username']]
+                            st.write("### Workstation Data")
+                            st.dataframe(display_df, use_container_width=True)
+                            csv = df.to_csv(index=False).encode('utf-8-sig')
 
-                        st.download_button(
-                            label="Download Workstations as CSV",
-                            data=csv,
-                            file_name='workstations.csv',
-                            mime='text/csv',
-                        )
+                            st.download_button(
+                                label="Download Workstations as CSV",
+                                data=csv,
+                                file_name='workstations.csv',
+                                mime='text/csv',
+                            )
+                    else:
+                        st.warning("Nema radnih stanica za ovog klijenta.")
                 else:
-                    st.warning("Nema radnih stanica za ovog klijenta.")
+                    st.warning("Ne postoji klijent sa tim ID-jem.")
             else:
                 st.warning("Samo intedžeri!")
 
