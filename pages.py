@@ -1,5 +1,3 @@
-# pages.py
-
 import os
 import requests
 import streamlit as st
@@ -10,11 +8,6 @@ HEADERS = {
     "Content-Type": "application/json",
     "X-API-KEY": os.getenv("TRMM_NP"),
 }
-
-
-
-
-
 
 @st.cache_data
 def fetch_clients():
