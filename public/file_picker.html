@@ -1,0 +1,35 @@
+<!-- public/file_picker.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Picker</title>
+</head>
+<body>
+    <input type="file" id="fileInput" multiple>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('change', (event) => {
+            const files = event.target.files;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    const message = {
+                        'file_name': file.name,
+                        'file_type': file.type,
+                        'file_content': content
+                    };
+                    parent.postMessage(message, '*');
+                };
+                if (file.type.startsWith('image/') || file.type === 'text/plain') {
+                    reader.readAsDataURL(file);  // For images and text files
+                } else {
+                    reader.readAsBinaryString(file);  // For docx and other binary files
+                }
+            });
+        });
+    </script>
+</body>
+</html>
