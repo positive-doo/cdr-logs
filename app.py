@@ -5,12 +5,17 @@ import base64
 from PIL import Image
 from io import BytesIO
 from docx import Document
+import os
 
 st.title('File Picker')
 st.write('Please select files:')
 
+# Define the path to the HTML file
+html_file_path = os.path.join(os.path.dirname(__file__), 'public', 'file_picker.html')
+
 # Load the custom file picker component
-file_picker_component = components.html(open('public/file_picker.html').read(), height=300)
+with open(html_file_path, 'r') as f:
+    file_picker_component = components.html(f.read(), height=300)
 
 # Placeholder for displaying file content
 file_content_placeholder = st.empty()
