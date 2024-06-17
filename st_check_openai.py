@@ -19,13 +19,13 @@ def main():
         st.write(completion.choices[0].message)
 
 
-def main_warp_for_st():
+def main_wrap_for_st():
     check_openai_errors(main)
 
 deployment_environment = os.environ.get("DEPLOYMENT_ENVIRONMENT")
  
 if deployment_environment == "Streamlit":
-    name, authentication_status, username = positive_login(main, " ")
+    name, authentication_status, username = positive_login(main_wrap_for_st)
 else: 
     if __name__ == "__main__":
         check_openai_errors(main)
