@@ -2,7 +2,7 @@
 import openai
 import os
 import streamlit as st
-from myfunc.mojafunkcija import positive_login, check_openai_errors
+from login import positive_login, check_openai_errors
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
