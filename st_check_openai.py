@@ -9,7 +9,7 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def main():
     if st.button("Generate completion"):
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
               messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": "Who won the world series in 2020?"},
