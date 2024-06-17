@@ -10,13 +10,15 @@ def main():
     if st.button("Generate completion"):
         completion = client.chat.completions.create(
             model="gpt-4o",
-            messages=[
+              messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "Hello!"}
+                {"role": "user", "content": "Who won the world series in 2020?"},
+                {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+                {"role": "user", "content": "Where was it played?"}
             ]
             )
 
-        st.write(completion.choices[0].message)
+        st.write(completion.choices[0].message.content)
 
 
 def main_wrap_for_st():
