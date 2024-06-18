@@ -108,20 +108,18 @@ def page1():
                                 mime='text/csv',
                             )
 
-                            software_df = pd.DataFrame()
+                            software_list = []
 
-                            for workstation_id in workstations_ids:
-                                software_data = fetch_software_data(workstation_id)
-                                st.write(software_data)
-                                if software_data:
-                                    workstation_software_df = pd.DataFrame(software_data)
-                                    workstation_software_df['workstation_id'] = workstation_id
-                                    software_df = pd.concat([software_df, workstation_software_df], ignore_index=True)
+                            for w_id in workstations_ids:
+                                software_data = fetch_software_data(w_id)
+                                if 'software' in software_data:
+                                    for software in software_data['software']:
+                                        software['workstation_id'] = w_id
+                                        software_list.append(software)
 
-                            if not software_df.empty:
-                                software_df = software_df.applymap(lambda x: str(x).replace("\\\\", "\\"))
-                                software_df = pd.concat([software_df.drop(['software'], axis=1),
-                                                         software_df['software'].apply(pd.Series)], axis=1)
+                            if software_list:
+                                software_df = pd.DataFrame(software_list)
+                                software_df = software_df.applymap(lambda x: str(x).replace('\\\\', '\\') if isinstance(x, str) else x)
                                 st.write("### Software Data")
                                 st.dataframe(software_df, use_container_width=True)
                                 csv = software_df.to_csv(index=False).encode('utf-8-sig')
