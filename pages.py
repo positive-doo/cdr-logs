@@ -74,7 +74,7 @@ def page1():
             csv = df.to_csv(index=False).encode('utf-8-sig')
 
             st.download_button(
-                label="Download as CSV",
+                label="Download Clients as CSV",
                 data=csv,
                 file_name='clients.csv',
                 mime='text/csv',
@@ -108,18 +108,22 @@ def page1():
                                 mime='text/csv',
                             )
 
-                            st.session_state.software = pd.DataFrame()
+                            software_df = pd.DataFrame()
 
                             for workstation_id in workstations_ids:
                                 software_data = fetch_software_data(workstation_id)
                                 if software_data:
                                     workstation_software_df = pd.DataFrame(software_data)
-                                    st.session_state.software = pd.concat([st.session_state.software, workstation_software_df], ignore_index=True)
+                                    workstation_software_df['workstation_id'] = workstation_id
+                                    software_df = pd.concat([software_df, workstation_software_df], ignore_index=True)
 
-                            if not st.session_state.software.empty:
+                            if not software_df.empty:
+                                software_df = software_df.applymap(lambda x: str(x).replace("\\\\", "\\"))
+                                software_df = pd.concat([software_df.drop(['software'], axis=1),
+                                                         software_df['software'].apply(pd.Series)], axis=1)
                                 st.write("### Software Data")
-                                st.dataframe(st.session_state.software, use_container_width=True)
-                                csv = st.session_state.software.to_csv(index=False).encode('utf-8-sig')
+                                st.dataframe(software_df, use_container_width=True)
+                                csv = software_df.to_csv(index=False).encode('utf-8-sig')
 
                                 st.download_button(
                                     label="Download Software Data as CSV",
