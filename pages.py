@@ -26,16 +26,11 @@ def fetch_workstations(client_id):
     response = requests.get(f'{API_BASE_URL}/agents/?client={client_id}', headers=HEADERS)
     if response.status_code == 200:
         workstations = response.json()
-        return workstations
+        workstations_ids = [workstation['id'] for workstation in workstations]
+        return workstations, workstations_ids
     else:
         print(f'Failed to fetch workstations: {response.status_code}')
         return []
-    
-
-def fetch_workstation_ids(client_id):
-    workstations = fetch_workstations(client_id)
-    workstation_ids = [workstation['id'] for workstation in workstations]
-    return workstation_ids
 
 
 def fetch_software_data(workstation_id):
@@ -93,7 +88,7 @@ def page1():
             if client_id.isdigit():
                 client_id_int = int(client_id)
                 if client_id_int in st.session_state.clients['id'].values:
-                    workstations = fetch_workstations(client_id_int)
+                    workstations, workstations_ids = fetch_workstations(client_id_int)
 
                     if workstations != []:
                         if workstations:
@@ -114,8 +109,10 @@ def page1():
                             )
 
                             st.session_state.software = pd.DataFrame()
-                            for workstation in workstations:
-                                software_data = fetch_software_data(workstation['id'])
+
+                            for w_id in workstations_ids:
+                                software_data = fetch_software_data(w_id)
+                                st.write(software_data)
                                 if software_data:
                                     workstation_software_df = pd.DataFrame(software_data)
                                     st.session_state.software = pd.concat([st.session_state.software, workstation_software_df], ignore_index=True)
