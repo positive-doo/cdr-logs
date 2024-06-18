@@ -30,12 +30,32 @@ def fetch_workstations(client_id):
     else:
         print(f'Failed to fetch workstations: {response.status_code}')
         return []
+    
+
+def fetch_workstation_ids(client_id):
+    workstations = fetch_workstations(client_id)
+    workstation_ids = [workstation['id'] for workstation in workstations]
+    return workstation_ids
+
+
+def fetch_software_data(workstation_id):
+    """Fetch the software data for the specified workstation ID and return the response."""
+    response = requests.get(f'{API_BASE_URL}/software/{workstation_id}/', headers=HEADERS)
+    if response.status_code == 200:
+        software_data = response.json()
+        return software_data
+    else:
+        print(f'Failed to fetch software data: {response.status_code}')
+        return []
+
 
 def page1():
     if "clients" not in st.session_state:
         st.session_state.clients = None
     if "workstations" not in st.session_state:
         st.session_state.workstations = None
+    if "software" not in st.session_state:
+        st.session_state.software = None
 
     st.title("App za pristup podacima iz Tactical RMM-a 💻")
 
@@ -73,7 +93,7 @@ def page1():
             if client_id.isdigit():
                 client_id_int = int(client_id)
                 if client_id_int in st.session_state.clients['id'].values:
-                    workstations = fetch_workstations(int(client_id))
+                    workstations = fetch_workstations(client_id_int)
 
                     if workstations != []:
                         if workstations:
@@ -92,6 +112,25 @@ def page1():
                                 file_name='workstations.csv',
                                 mime='text/csv',
                             )
+
+                            st.session_state.software = pd.DataFrame()
+                            for workstation in workstations:
+                                software_data = fetch_software_data(workstation['id'])
+                                if software_data:
+                                    workstation_software_df = pd.DataFrame(software_data)
+                                    st.session_state.software = pd.concat([st.session_state.software, workstation_software_df], ignore_index=True)
+
+                            if not st.session_state.software.empty:
+                                st.write("### Software Data")
+                                st.dataframe(st.session_state.software, use_container_width=True)
+                                csv = st.session_state.software.to_csv(index=False).encode('utf-8-sig')
+
+                                st.download_button(
+                                    label="Download Software Data as CSV",
+                                    data=csv,
+                                    file_name='software.csv',
+                                    mime='text/csv',
+                                )
                     else:
                         st.warning("Nema radnih stanica za ovog klijenta.")
                 else:
