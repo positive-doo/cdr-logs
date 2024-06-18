@@ -91,23 +91,24 @@ def page1():
                     workstations, workstations_ids = fetch_workstations(client_id_int)
 
                     if workstations != []:
-                        if workstations:
-                            st.session_state.workstations = pd.DataFrame(workstations)
+                        with st.spinner("Obrada radnih stanica..."):
+                            if workstations:
+                                st.session_state.workstations = pd.DataFrame(workstations)
 
-                        if st.session_state.workstations is not None:
-                            df = st.session_state.workstations
-                            display_df = df[['hostname', 'logged_username']]
-                            st.write("### Workstation Data")
-                            st.dataframe(display_df, use_container_width=True)
-                            csv = df.to_csv(index=False).encode('utf-8-sig')
+                            if st.session_state.workstations is not None:
+                                df = st.session_state.workstations
+                                display_df = df[['hostname', 'logged_username']]
+                                st.write("### Workstation Data")
+                                st.dataframe(display_df, use_container_width=True)
+                                csv = df.to_csv(index=False).encode('utf-8-sig')
 
-                            st.download_button(
-                                label="Download Workstations as CSV",
-                                data=csv,
-                                file_name='workstations.csv',
-                                mime='text/csv',
-                            )
-
+                                st.download_button(
+                                    label="Download Workstations as CSV",
+                                    data=csv,
+                                    file_name='workstations.csv',
+                                    mime='text/csv',
+                                )
+                        with st.spinner("Obrada softvera..."):
                             software_list = []
 
                             for w_id in workstations_ids:
