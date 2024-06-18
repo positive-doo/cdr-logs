@@ -112,6 +112,7 @@ def page1():
 
                             for workstation_id in workstations_ids:
                                 software_data = fetch_software_data(workstation_id)
+                                st.write(software_data)
                                 if software_data:
                                     workstation_software_df = pd.DataFrame(software_data)
                                     workstation_software_df['workstation_id'] = workstation_id
