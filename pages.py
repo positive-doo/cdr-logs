@@ -64,7 +64,8 @@ def page1():
     col1, _, col2 = st.columns([3, 1, 5])
 
     with col1:
-        st.session_state.clients = pd.DataFrame(fetch_clients())
+        if st.session_state.clients is None:
+            st.session_state.clients = pd.DataFrame(fetch_clients())
 
         if st.session_state.clients is not None:
             df = st.session_state.clients
@@ -88,11 +89,11 @@ def page1():
             if client_id.isdigit():
                 client_id_int = int(client_id)
                 if client_id_int in st.session_state.clients['id'].values:
-                    workstations, workstations_ids = fetch_workstations(client_id_int)
+                    if st.session_state.workstations is None:
+                        workstations, workstations_ids = fetch_workstations(client_id_int)
 
-                    if workstations != []:
-                        with st.spinner("Obrada radnih stanica..."):
-                            if workstations:
+                        if workstations != []:
+                            with st.spinner("Obrada radnih stanica..."):
                                 st.session_state.workstations = pd.DataFrame(workstations)
 
                             if st.session_state.workstations is not None:
@@ -108,35 +109,56 @@ def page1():
                                     file_name='workstations.csv',
                                     mime='text/csv',
                                 )
-                        with st.spinner("Obrada softvera..."):
-                            software_list = []
 
-                            for w_id in workstations_ids:
-                                software_data = fetch_software_data(w_id)
-                                if 'software' in software_data:
-                                    for software in software_data['software']:
-                                        software['workstation_id'] = w_id
-                                        software_list.append(software)
+                            with st.spinner("Obrada softvera..."):
+                                software_list = []
 
-                            if software_list:
-                                software_df = pd.DataFrame(software_list)
-                                software_df = software_df.applymap(lambda x: str(x).replace('\\\\', '\\') if isinstance(x, str) else x)
-                                st.write("### Software Data")
-                                st.dataframe(software_df, use_container_width=True)
-                                csv = software_df.to_csv(index=False).encode('utf-8-sig')
+                                for w_id in workstations_ids:
+                                    software_data = fetch_software_data(w_id)
+                                    if 'software' in software_data:
+                                        for software in software_data['software']:
+                                            software['workstation_id'] = w_id
+                                            software_list.append(software)
 
-                                st.download_button(
-                                    label="Download Software Data as CSV",
-                                    data=csv,
-                                    file_name='software.csv',
-                                    mime='text/csv',
-                                )
-                    else:
-                        st.warning("Nema radnih stanica za ovog klijenta.")
+                                if software_list:
+                                    st.session_state.software = pd.DataFrame(software_list)
+                                    st.session_state.software = st.session_state.software.applymap(lambda x: str(x).replace('\\\\', '\\') if isinstance(x, str) else x)
+                        else:
+                            st.warning("Nema radnih stanica za ovog klijenta.")
+
+                    if st.session_state.workstations is not None:
+                        df = st.session_state.workstations
+                        display_df = df[['hostname', 'logged_username']]
+                        st.write("### Workstation Data")
+                        st.dataframe(display_df, use_container_width=True)
+                        csv = df.to_csv(index=False).encode('utf-8-sig')
+
+                        st.download_button(
+                            label="Download Workstations as CSV",
+                            data=csv,
+                            file_name='workstations.csv',
+                            mime='text/csv',
+                        )
+
+                    if st.session_state.software is not None:
+                        software_df = st.session_state.software
+                        st.write("### Software Data")
+                        st.dataframe(software_df, use_container_width=True)
+                        csv = software_df.to_csv(index=False).encode('utf-8-sig')
+
+                        st.download_button(
+                            label="Download Software Data as CSV",
+                            data=csv,
+                            file_name='software.csv',
+                            mime='text/csv',
+                        )
+
                 else:
                     st.warning("Ne postoji klijent sa tim ID-jem.")
             else:
                 st.warning("Samo intedžeri!")
+
+
 
 def page2():
     st.title("Page 2")

@@ -2,7 +2,6 @@ import streamlit as st
 import streamlit_authenticator as stauth
 from openai import APIConnectionError, APIError, RateLimitError
 import yaml
-from yaml.loader import SafeLoader
 
 def positive_login(main):
     """
@@ -10,7 +9,7 @@ def positive_login(main):
     """
 
     with open('config.yaml') as file:
-        config = yaml.load(file, Loader=SafeLoader)
+        config = yaml.load(file, Loader=yaml.loader.SafeLoader)
 
     authenticator = stauth.Authenticate(
         config['credentials'],
