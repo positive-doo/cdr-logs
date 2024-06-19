@@ -111,11 +111,8 @@ def page1():
                                 )
                         with st.spinner("Obrada softvera..."):
                             software_list = []
-                            i = 0
                             for w_id in workstations_ids:
                                 software_data = fetch_software_data(w_id)
-                                st.write(i)
-                                i+=1
                                 if 'software' in software_data:
                                     for software in software_data['software']:
                                         software['workstation_id'] = w_id
