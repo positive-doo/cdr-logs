@@ -111,9 +111,11 @@ def page1():
                                 )
                         with st.spinner("Obrada softvera..."):
                             software_list = []
-
+                            i = 0
                             for w_id in workstations_ids:
                                 software_data = fetch_software_data(w_id)
+                                st.write(i)
+                                i+=1
                                 if 'software' in software_data:
                                     for software in software_data['software']:
                                         software['workstation_id'] = w_id
@@ -121,7 +123,7 @@ def page1():
 
                             if software_list:
                                 software_df = pd.DataFrame(software_list)
-                                software_df = software_df.applymap(lambda x: str(x).replace('\\\\', '\\') if isinstance(x, str) else x)
+                                software_df = software_df.map(lambda x: str(x).replace('\\\\', '\\') if isinstance(x, str) else x)
                                 st.write("### Software Data")
                                 st.dataframe(software_df, use_container_width=True)
                                 csv = software_df.to_csv(index=False).encode('utf-8-sig')
