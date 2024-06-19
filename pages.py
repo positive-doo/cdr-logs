@@ -107,6 +107,7 @@ def page1():
                                     data=csv,
                                     file_name='workstations.csv',
                                     mime='text/csv',
+                                    key='workstations_csv',
                                 )
                         with st.spinner("Obrada softvera..."):
                             software_list = []
@@ -130,6 +131,7 @@ def page1():
                                     data=csv,
                                     file_name='software.csv',
                                     mime='text/csv',
+                                    key='software_csv',
                                 )
                     else:
                         st.warning("Nema radnih stanica za ovog klijenta.")
