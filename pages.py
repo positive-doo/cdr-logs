@@ -138,6 +138,7 @@ def page1():
                             data=csv,
                             file_name='workstations.csv',
                             mime='text/csv',
+                            key='workstations_csv',
                         )
 
                     if st.session_state.software is not None:
@@ -151,6 +152,7 @@ def page1():
                             data=csv,
                             file_name='software.csv',
                             mime='text/csv',
+                            key='software_csv',
                         )
 
                 else:
