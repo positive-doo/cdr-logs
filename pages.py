@@ -79,16 +79,24 @@ def page1():
                 data=csv,
                 file_name='clients.csv',
                 mime='text/csv',
+                key='download_clients'
             )
 
     with col2:
         col21, _ = st.columns([1, 6])
-        client_id = col21.text_input("Unesi ID klijenta")
+        client_id = col21.text_input("Unesi ID klijenta", key='client_id')
 
         if client_id:
             if client_id.isdigit():
                 client_id_int = int(client_id)
+
                 if client_id_int in st.session_state.clients['id'].values:
+                    # Reset session state for new client ID
+                    if "current_client_id" not in st.session_state or st.session_state.current_client_id != client_id_int:
+                        st.session_state.current_client_id = client_id_int
+                        st.session_state.workstations = None
+                        st.session_state.software = None
+
                     if st.session_state.workstations is None:
                         workstations, workstations_ids = fetch_workstations(client_id_int)
 
@@ -108,6 +116,7 @@ def page1():
                                     data=csv,
                                     file_name='workstations.csv',
                                     mime='text/csv',
+                                    key='download_workstations'
                                 )
 
                             with st.spinner("Obrada softvera..."):
@@ -138,7 +147,7 @@ def page1():
                             data=csv,
                             file_name='workstations.csv',
                             mime='text/csv',
-                            key='workstations_csv',
+                            key='download_workstations'
                         )
 
                     if st.session_state.software is not None:
@@ -152,13 +161,14 @@ def page1():
                             data=csv,
                             file_name='software.csv',
                             mime='text/csv',
-                            key='software_csv',
+                            key='download_software'
                         )
 
                 else:
                     st.warning("Ne postoji klijent sa tim ID-jem.")
             else:
                 st.warning("Samo intedžeri!")
+
 
 
 
