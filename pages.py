@@ -97,7 +97,39 @@ def page1():
 
                             if st.session_state.workstations is not None:
                                 df = st.session_state.workstations
-                                display_df = df[['hostname', 'logged_username']]
+
+                                software_list = []
+                                for w_id in workstations_ids:
+                                    software_data = fetch_software_data(w_id)
+                                    if 'software' in software_data:
+                                        sw_names = [software['name'] for software in software_data['software']]
+                                        software_list.append({'workstation_id': w_id, 'software': sw_names})
+
+                                software_df = pd.DataFrame(software_list)
+
+                                # Merge software data with workstations data
+                                df = df.merge(software_df, left_on='agent_id', right_on='workstation_id', how='left')
+                                df['software'] = df['software'].apply(lambda x: ', '.join(x) if isinstance(x, list) else '')
+
+                                # Filter and rename columns
+                                df = df[['hostname', 'client_name', 'operating_system', 'cpu_model', 'graphics', 'physical_disks', 'software']]
+                                df.rename(columns={
+                                    'hostname': 'Hostname',
+                                    'client_name': 'Client',
+                                    'operating_system': 'OS',
+                                    'cpu_model': 'CPU',
+                                    'graphics': 'GPU',
+                                    'software': 'SW'
+                                }, inplace=True)
+
+                                # Separate physical_disks into individual columns
+                                max_disks = df['physical_disks'].apply(lambda x: len(x) if isinstance(x, list) else 0).max()
+                                for i in range(max_disks):
+                                    df[f'DISK {i+1}'] = df['physical_disks'].apply(lambda x: x[i] if isinstance(x, list) and len(x) > i else '')
+
+                                df.drop(columns=['physical_disks'], inplace=True)
+
+                                display_df = df[['Hostname', 'Client', 'OS', 'CPU', 'GPU'] + [f'DISK {i+1}' for i in range(max_disks)] + ['SW']]
                                 st.write("### Workstation Data")
                                 st.dataframe(display_df, use_container_width=True)
                                 csv = df.to_csv(index=False).encode('utf-8-sig')
@@ -109,37 +141,12 @@ def page1():
                                     mime='text/csv',
                                     key='workstations_csv',
                                 )
-                        with st.spinner("Obrada softvera..."):
-                            software_list = []
-                            for w_id in workstations_ids:
-                                software_data = fetch_software_data(w_id)
-                                if 'software' in software_data:
-                                    for software in software_data['software']:
-                                        software['workstation_id'] = w_id
-                                        software_list.append(software)
-
-                            if software_list:
-                                software_df = pd.DataFrame(software_list)
-                                software_df = software_df.map(lambda x: str(x).replace('\\\\', '\\') if isinstance(x, str) else x)
-                                st.write("### Software Data")
-                                st.dataframe(software_df, use_container_width=True)
-                                csv = software_df.to_csv(index=False).encode('utf-8-sig')
-
-                                st.download_button(
-                                    label="Download Software Data as CSV",
-                                    data=csv,
-                                    file_name='software.csv',
-                                    mime='text/csv',
-                                    key='software_csv',
-                                )
                     else:
                         st.warning("Nema radnih stanica za ovog klijenta.")
                 else:
                     st.warning("Ne postoji klijent sa tim ID-jem.")
             else:
                 st.warning("Samo intedžeri!")
-
-
 
 
 def page2():
