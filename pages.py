@@ -207,7 +207,7 @@ def page2():
         2: "Prekosutra",
         3: "Nakosutra"
     }
-    term = st.text_input("Unesite termin (ostaviti prazno za 'Данила Киша')", term)
+    term = st.text_input("Unesite termin (ostaviti prazno za 'Данила Киша')")
     if term.strip() == "":
         term = term0
 
