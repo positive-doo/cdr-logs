@@ -150,5 +150,47 @@ def page1():
 
 
 def page2():
-    st.title("Page 2")
-    st.write("Random text")
+    from bs4 import BeautifulSoup
+    def check_term_in_file(url, term):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            return term.lower() in soup.text.lower()
+        except requests.RequestException as e:
+            print(f"Error fetching {url}: {e}")
+            return False
+
+    st.title("Pretraga planiranih isključenja struje")
+
+    term = "Данила Киша"
+    urls = [
+        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_0_Iskljucenja.htm",
+        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_1_Iskljucenja.htm",
+        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_2_Iskljucenja.htm",
+        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_3_Iskljucenja.htm"
+    ]
+
+    day_mapping = {
+        0: "Danas",
+        1: "Sutra",
+        2: "Prekosutra",
+        3: "Nakosutra"
+    }
+
+    results = []
+    for i, url in enumerate(urls):
+        if check_term_in_file(url, term):
+            results.append((day_mapping[i], url))
+    
+    output = ""
+    if results:
+        for result in results:
+            output += f"Termin '{term}' je pronađen za '{result[0]}', pogledajte:\n{result[1]}\n\n"
+    else:
+        output += f"Termin'{term}' nije pronađen u narednim danima.\n\n"
+
+    st.write(output)
