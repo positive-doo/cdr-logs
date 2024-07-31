@@ -2,7 +2,6 @@ import os
 import requests
 import streamlit as st
 import pandas as pd
-from bs4 import BeautifulSoup
 
 API_BASE_URL = os.getenv("TRMM_BASE_URL")
 HEADERS = {
@@ -21,7 +20,6 @@ def fetch_clients():
         st.error(f'Failed to fetch clients: {response.status_code}')
         return []
 
-
 def fetch_workstations(client_id):
     """Fetch the list of workstations for the specified client ID and return the response."""
     response = requests.get(f'{API_BASE_URL}/agents/?client={client_id}', headers=HEADERS)
@@ -33,7 +31,6 @@ def fetch_workstations(client_id):
         print(f'Failed to fetch workstations: {response.status_code}')
         return []
 
-
 def fetch_software_data(workstation_id):
     """Fetch the software data for the specified workstation ID and return the response."""
     response = requests.get(f'{API_BASE_URL}/software/{workstation_id}/', headers=HEADERS)
@@ -44,27 +41,21 @@ def fetch_software_data(workstation_id):
         print(f'Failed to fetch software data: {response.status_code}')
         return []
 
-
 def fetch_ram_data(agent_id):
-    """Fetch the RAM data for the specified workstation ID using web scraping."""
-    API_BASE_URL = os.getenv("TRMM_BASE_URL")
+    """Fetch the RAM data for the specified workstation ID."""
     url = f"{API_BASE_URL}/agents/{agent_id}/"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+    headers = HEADERS
     
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        ram_element = soup.select_one("div.q-item__section.column.q-item__section--main.justify-center")
-        ram_text = ram_element.text if ram_element else "N/A"
+        data = response.json()
+        ram_data = data.get('total_ram', 'N/A')
     except Exception as e:
         print(f"Failed to fetch RAM data: {e}")
-        ram_text = "N/A"
+        ram_data = "N/A"
     
-    return ram_text
-
+    return ram_data
 
 def page1():
     if "clients" not in st.session_state:
@@ -178,6 +169,7 @@ def page1():
 
 
 def page2():
+    from bs4 import BeautifulSoup
     def check_term_in_file(url, term):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
