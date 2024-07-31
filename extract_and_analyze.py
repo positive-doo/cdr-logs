@@ -5,7 +5,6 @@ from login import positive_login
 
 st.set_page_config(layout="wide")
 
-
 def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox("Go to", ["Fetch clients & their workstations", "Check power outages"], index=None)
