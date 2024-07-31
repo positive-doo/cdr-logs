@@ -8,7 +8,7 @@ st.set_page_config(layout="wide")
 
 def main():
     st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox("Go to", ["Fetch clients & their workstations", "Page 2"], index=None)
+    page = st.sidebar.selectbox("Go to", ["Fetch clients & their workstations", "Check power outages"], index=None)
 
     if page == "Fetch clients & their workstations":
         page1()
