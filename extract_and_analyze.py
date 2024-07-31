@@ -12,7 +12,7 @@ def main():
 
     if page == "Fetch clients & their workstations":
         page1()
-    elif page == "Page 2":
+    elif page == "Check power outages":
         page2()
 
 deployment_environment = os.environ.get("DEPLOYMENT_ENVIRONMENT")

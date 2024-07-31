@@ -2,6 +2,7 @@ import os
 import requests
 import streamlit as st
 import pandas as pd
+from bs4 import BeautifulSoup
 
 API_BASE_URL = os.getenv("TRMM_BASE_URL")
 HEADERS = {
@@ -42,6 +43,27 @@ def fetch_software_data(workstation_id):
     else:
         print(f'Failed to fetch software data: {response.status_code}')
         return []
+
+
+def fetch_ram_data(agent_id):
+    """Fetch the RAM data for the specified workstation ID using web scraping."""
+    API_BASE_URL = os.getenv("TRMM_BASE_URL")
+    url = f"{API_BASE_URL}/agents/{agent_id}/"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        ram_element = soup.select_one("div.q-item__section.column.q-item__section--main.justify-center")
+        ram_text = ram_element.text if ram_element else "N/A"
+    except Exception as e:
+        print(f"Failed to fetch RAM data: {e}")
+        ram_text = "N/A"
+    
+    return ram_text
 
 
 def page1():
@@ -99,27 +121,33 @@ def page1():
                                 df = st.session_state.workstations
 
                                 software_list = []
+                                ram_list = []
                                 for w_id in workstations_ids:
                                     software_data = fetch_software_data(w_id)
                                     if 'software' in software_data:
                                         sw_names = [software['name'] for software in software_data['software']]
                                         software_list.append({'workstation_id': w_id, 'software': sw_names})
+                                    ram_data = fetch_ram_data(w_id)
+                                    ram_list.append({'workstation_id': w_id, 'ram': ram_data})
 
                                 software_df = pd.DataFrame(software_list)
+                                ram_df = pd.DataFrame(ram_list)
 
-                                # Merge software data with workstations data
+                                # Merge software and RAM data with workstations data
                                 df = df.merge(software_df, left_on='agent_id', right_on='workstation_id', how='left')
+                                df = df.merge(ram_df, left_on='agent_id', right_on='workstation_id', how='left')
                                 df['software'] = df['software'].apply(lambda x: ', '.join(x) if isinstance(x, list) else '')
 
                                 # Filter and rename columns
-                                df = df[['hostname', 'client_name', 'operating_system', 'cpu_model', 'graphics', 'physical_disks', 'software']]
+                                df = df[['hostname', 'client_name', 'operating_system', 'cpu_model', 'graphics', 'physical_disks', 'ram', 'software']]
                                 df.rename(columns={
                                     'hostname': 'Hostname',
                                     'client_name': 'Client',
                                     'operating_system': 'OS',
                                     'cpu_model': 'CPU',
                                     'graphics': 'GPU',
-                                    'software': 'SW'
+                                    'software': 'SW',
+                                    'ram': 'RAM'
                                 }, inplace=True)
 
                                 # Separate physical_disks into individual columns
@@ -129,7 +157,7 @@ def page1():
 
                                 df.drop(columns=['physical_disks'], inplace=True)
 
-                                display_df = df[['Hostname', 'Client', 'OS', 'CPU', 'GPU'] + [f'DISK {i+1}' for i in range(max_disks)] + ['SW']]
+                                display_df = df[['Hostname', 'Client', 'OS', 'CPU', 'GPU', 'RAM'] + [f'DISK {i+1}' for i in range(max_disks)] + ['SW']]
                                 st.write("### Workstation Data")
                                 st.dataframe(display_df, use_container_width=True)
                                 csv = df.to_csv(index=False).encode('utf-8-sig')
@@ -150,7 +178,6 @@ def page1():
 
 
 def page2():
-    from bs4 import BeautifulSoup
     def check_term_in_file(url, term):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -166,7 +193,7 @@ def page2():
 
     st.title("Pretraga planiranih isključenja struje")
 
-    term = "Данила Киша"
+    term0 = "Данила Киша"
     urls = [
         "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_0_Iskljucenja.htm",
         "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_1_Iskljucenja.htm",
@@ -180,17 +207,21 @@ def page2():
         2: "Prekosutra",
         3: "Nakosutra"
     }
+    term = st.text_input("Unesite termin (ostaviti prazno za 'Данила Киша')", term)
+    if term.strip() == "":
+        term = term0
 
-    results = []
-    for i, url in enumerate(urls):
-        if check_term_in_file(url, term):
-            results.append((day_mapping[i], url))
-    
-    output = ""
-    if results:
-        for result in results:
-            output += f"Termin '{term}' je pronađen za '{result[0]}', pogledajte:\n{result[1]}\n\n"
-    else:
-        output += f"Termin'{term}' nije pronađen u narednim danima.\n\n"
+    if st.button("Pretraži"):
+        results = []
+        for i, url in enumerate(urls):
+            if check_term_in_file(url, term):
+                results.append((day_mapping[i], url))
+        
+        output = ""
+        if results:
+            for result in results:
+                output += f"Termin '{term}' je pronađen za '{result[0]}', pogledajte:\n{result[1]}\n\n"
+        else:
+            output += f"Termin'{term}' nije pronađen u narednim danima.\n\n"
 
-    st.write(output)
+        st.write(output)
