@@ -2,6 +2,7 @@ import os
 import requests
 import streamlit as st
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 
 API_BASE_URL = os.getenv("TRMM_BASE_URL")
 HEADERS = {
@@ -29,32 +30,36 @@ def fetch_workstations(client_id):
         return workstations, workstations_ids
     else:
         print(f'Failed to fetch workstations: {response.status_code}')
-        return []
+        return [], []
 
-def fetch_software_data(workstation_id):
-    """Fetch the software data for the specified workstation ID and return the response."""
-    response = requests.get(f'{API_BASE_URL}/software/{workstation_id}/', headers=HEADERS)
-    if response.status_code == 200:
-        software_data = response.json()
-        return software_data
-    else:
-        print(f'Failed to fetch software data: {response.status_code}')
-        return []
+def fetch_batch_data(urls):
+    with ThreadPoolExecutor() as executor:
+        responses = list(executor.map(lambda url: requests.get(url, headers=HEADERS), urls))
+    return responses
 
-def fetch_ram_data(agent_id):
-    """Fetch the RAM data for the specified workstation ID."""
-    url = f"{API_BASE_URL}/agents/{agent_id}/"
-    headers = HEADERS
-    
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        ram_data = data.get('total_ram', 'N/A')
-    except Exception as e:
-        print(f"Failed to fetch RAM data: {e}")
-        ram_data = "N/A"
-    
+def fetch_software_data_batch(workstation_ids):
+    urls = [f'{API_BASE_URL}/software/{workstation_id}/' for workstation_id in workstation_ids]
+    responses = fetch_batch_data(urls)
+    software_data = []
+    for response in responses:
+        if response.status_code == 200:
+            software_data.append(response.json())
+        else:
+            print(f'Failed to fetch software data: {response.status_code}')
+            software_data.append({})
+    return software_data
+
+def fetch_ram_data_batch(agent_ids):
+    urls = [f'{API_BASE_URL}/agents/{agent_id}/' for agent_id in agent_ids]
+    responses = fetch_batch_data(urls)
+    ram_data = []
+    for response in responses:
+        if response.status_code == 200:
+            data = response.json()
+            ram_data.append(data.get('total_ram', 'N/A'))
+        else:
+            print(f'Failed to fetch RAM data: {response.status_code}')
+            ram_data.append('N/A')
     return ram_data
 
 def page1():
@@ -103,25 +108,27 @@ def page1():
                 if client_id_int in st.session_state.clients['id'].values:
                     workstations, workstations_ids = fetch_workstations(client_id_int)
 
-                    if workstations != []:
+                    if workstations:
                         with st.spinner("Obrada radnih stanica..."):
-                            if workstations:
-                                st.session_state.workstations = pd.DataFrame(workstations)
+                            st.session_state.workstations = pd.DataFrame(workstations)
 
                             if st.session_state.workstations is not None:
                                 df = st.session_state.workstations
 
+                                # Fetch software and RAM data in batches
+                                software_data_batch = fetch_software_data_batch(workstations_ids)
+                                ram_data_batch = fetch_ram_data_batch(workstations_ids)
+
+                                # Process software data
                                 software_list = []
-                                ram_list = []
-                                for w_id in workstations_ids:
-                                    software_data = fetch_software_data(w_id)
+                                for w_id, software_data in zip(workstations_ids, software_data_batch):
                                     if 'software' in software_data:
                                         sw_names = [software['name'] for software in software_data['software']]
                                         software_list.append({'workstation_id': w_id, 'software': sw_names})
-                                    ram_data = fetch_ram_data(w_id)
-                                    ram_list.append({'workstation_id': w_id, 'ram': ram_data})
-
                                 software_df = pd.DataFrame(software_list)
+
+                                # Process RAM data
+                                ram_list = [{'workstation_id': w_id, 'ram': ram_data} for w_id, ram_data in zip(workstations_ids, ram_data_batch)]
                                 ram_df = pd.DataFrame(ram_list)
 
                                 # Merge software and RAM data with workstations data
@@ -169,51 +176,4 @@ def page1():
 
 
 def page2():
-    from bs4 import BeautifulSoup
-    def check_term_in_file(url, term):
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, 'html.parser')
-            return term.lower() in soup.text.lower()
-        except requests.RequestException as e:
-            print(f"Error fetching {url}: {e}")
-            return False
-
-    st.title("Pretraga planiranih isključenja struje")
-
-    term0 = "Данила Киша"
-    urls = [
-        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_0_Iskljucenja.htm",
-        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_1_Iskljucenja.htm",
-        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_2_Iskljucenja.htm",
-        "https://elektrodistribucija.rs/planirana-iskljucenja-srbija/NoviSad_Dan_3_Iskljucenja.htm"
-    ]
-
-    day_mapping = {
-        0: "Danas",
-        1: "Sutra",
-        2: "Prekosutra",
-        3: "Nakosutra"
-    }
-    term = st.text_input("Unesite termin (ostaviti prazno za 'Данила Киша')")
-    if term.strip() == "":
-        term = term0
-
-    if st.button("Pretraži"):
-        results = []
-        for i, url in enumerate(urls):
-            if check_term_in_file(url, term):
-                results.append((day_mapping[i], url))
-        
-        output = ""
-        if results:
-            for result in results:
-                output += f"Termin '{term}' je pronađen za '{result[0]}', pogledajte:\n{result[1]}\n\n"
-        else:
-            output += f"Termin'{term}' nije pronađen u narednim danima.\n\n"
-
-        st.write(output)
+    st.title("...")
