@@ -3,6 +3,9 @@ from requests import get as reqget
 import streamlit as st
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
+
+relevant_az_tier = 2
 
 API_BASE_URL = getenv("TRMM_BASE_URL")
 HEADERS = {
@@ -10,19 +13,20 @@ HEADERS = {
     "X-API-KEY": getenv("TRMM_NP"),
 }
 
-@st.cache_data
+
+@lru_cache(maxsize=128)
 def fetch_clients():
     """Fetch the list of clients."""
     response = reqget(f'{API_BASE_URL}/clients/', headers=HEADERS)
     if response.status_code == 200:
-        clients = response.json()
-        return clients
+        return response.json()
     else:
         st.error(f'Failed to fetch clients: {response.status_code}')
         return []
 
+@lru_cache(maxsize=128)
 def fetch_workstations(client_id):
-    """Fetch the list of workstations for the specified client ID and return the response."""
+    """Fetch the list of workstations for the specified client ID."""
     response = reqget(f'{API_BASE_URL}/agents/?client={client_id}', headers=HEADERS)
     if response.status_code == 200:
         workstations = response.json()
@@ -32,8 +36,9 @@ def fetch_workstations(client_id):
         print(f'Failed to fetch workstations: {response.status_code}')
         return [], []
 
-def fetch_batch_data(urls):
-    with ThreadPoolExecutor() as executor:
+def fetch_batch_data(urls, max_workers=relevant_az_tier):
+    """Fetch data from multiple URLs using threads for improved performance."""
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         responses = list(executor.map(lambda url: reqget(url, headers=HEADERS), urls))
     return responses
 
@@ -62,13 +67,18 @@ def fetch_ram_data_batch(agent_ids):
             ram_data.append('N/A')
     return ram_data
 
+
+def initialize_session_state():
+    if 'clients' not in st.session_state:
+        st.session_state['clients'] = None
+    if 'workstations' not in st.session_state:
+        st.session_state['workstations'] = None
+    if 'software' not in st.session_state:
+        st.session_state['software'] = None
+
+
 def page1():
-    if "clients" not in st.session_state:
-        st.session_state.clients = None
-    if "workstations" not in st.session_state:
-        st.session_state.workstations = None
-    if "software" not in st.session_state:
-        st.session_state.software = None
+    initialize_session_state()
 
     st.title("App za pristup podacima iz Tactical RMM-a 💻")
 
