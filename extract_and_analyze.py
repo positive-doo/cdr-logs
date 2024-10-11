@@ -1,7 +1,5 @@
-import os
 import streamlit as st
 from pages import page1, page2
-from login import positive_login
 
 st.set_page_config(layout="wide")
 
@@ -14,10 +12,5 @@ def main():
     elif page == "Page2":
         page2()
 
-deployment_environment = os.environ.get("DEPLOYMENT_ENVIRONMENT")
-
-if deployment_environment == "Streamlit":
-    name, authentication_status, username = positive_login(main)
-else:
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()

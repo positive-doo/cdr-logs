@@ -4,4 +4,3 @@ pandas
 PyYAML
 requests
 streamlit
-streamlit-authenticator
