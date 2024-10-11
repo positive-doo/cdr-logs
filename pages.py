@@ -1,19 +1,19 @@
-import os
-import requests
+from os import getenv
+from requests import get as reqget
 import streamlit as st
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
-API_BASE_URL = os.getenv("TRMM_BASE_URL")
+API_BASE_URL = getenv("TRMM_BASE_URL")
 HEADERS = {
     "Content-Type": "application/json",
-    "X-API-KEY": os.getenv("TRMM_NP"),
+    "X-API-KEY": getenv("TRMM_NP"),
 }
 
 @st.cache_data
 def fetch_clients():
     """Fetch the list of clients."""
-    response = requests.get(f'{API_BASE_URL}/clients/', headers=HEADERS)
+    response = reqget(f'{API_BASE_URL}/clients/', headers=HEADERS)
     if response.status_code == 200:
         clients = response.json()
         return clients
@@ -23,7 +23,7 @@ def fetch_clients():
 
 def fetch_workstations(client_id):
     """Fetch the list of workstations for the specified client ID and return the response."""
-    response = requests.get(f'{API_BASE_URL}/agents/?client={client_id}', headers=HEADERS)
+    response = reqget(f'{API_BASE_URL}/agents/?client={client_id}', headers=HEADERS)
     if response.status_code == 200:
         workstations = response.json()
         workstations_ids = [workstation['agent_id'] for workstation in workstations]
@@ -34,7 +34,7 @@ def fetch_workstations(client_id):
 
 def fetch_batch_data(urls):
     with ThreadPoolExecutor() as executor:
-        responses = list(executor.map(lambda url: requests.get(url, headers=HEADERS), urls))
+        responses = list(executor.map(lambda url: reqget(url, headers=HEADERS), urls))
     return responses
 
 def fetch_software_data_batch(workstation_ids):
@@ -74,7 +74,7 @@ def page1():
 
     with st.expander("Instrukcije za korišćenje"):
         st.write("""
-        ... kada bude bilo potrebe...
+        ... Not really needed atm ...
         """)
 
     st.divider()
